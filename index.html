@@ -3,13 +3,87 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shop</title>
+<title>Vivenz'Orto — Raccolto fresco, prenotazione al kg</title>
+<meta name="description" content="Prenota online frutta e verdura raccolta il giorno stesso da Vivenz'Orto. Scorte in tempo reale, ritiro di persona in orto.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
 <link rel="stylesheet" href="style.css">
+<style>
+  /* Supplementi specifici della homepage (il design system resta in style.css) */
+  .skip{position:absolute;left:-9999px}
+  .skip:focus{left:1rem;top:1rem;z-index:99;background:#0f172a;color:#fff;padding:.5rem .8rem;border-radius:8px}
+  .brand{font-weight:800;font-size:1.05rem;text-decoration:none;color:inherit;letter-spacing:-.01em}
+  .kicker{display:inline-block;font-size:.76rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent,#059669);background:rgba(16,185,129,.12);padding:.35rem .8rem;border-radius:99px}
+  .hero{max-width:1000px;margin:0 auto;padding:2.4rem 1.2rem 1.2rem}
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:.8rem;margin-top:1.6rem}
+  @media(min-width:700px){.stats{grid-template-columns:repeat(4,1fr)}}
+  .stat{background:var(--card,#fff);border:1px solid var(--line,#e2e8f0);border-radius:var(--radius,14px);padding:.9rem 1rem;box-shadow:var(--shadow,0 1px 3px rgba(15,23,42,.06))}
+  .stat strong{display:block;font-size:1.5rem;letter-spacing:-.02em;color:var(--accent,#059669)}
+  .stat span{font-size:.78rem;color:var(--muted,#64748b)}
+  .price{font-weight:800}
+  .price small{color:var(--muted,#64748b);font-weight:500;font-size:.75rem}
+  .stock{font-size:.8rem;color:var(--muted,#64748b)}
+  .badge{position:absolute;top:.8rem;right:.8rem;font-size:.68rem;font-weight:700;padding:.25rem .55rem;border-radius:99px;background:#fef3c7;color:#92400e}
+  .badge.out{background:#fee2e2;color:#991b1b}
+  .stepper{display:flex;align-items:center;gap:.6rem}
+  .stepper button,.mini{width:34px;height:34px;border-radius:10px;border:1px solid var(--line,#e2e8f0);background:#fff;font-size:1rem;font-weight:700;cursor:pointer;color:var(--ink,#0f172a);display:grid;place-items:center}
+  .stepper .kg{flex:1;text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
+  .soldout{opacity:.55}
+  .soldout .stepper,.soldout .product-add{display:none}
+  .cart-head{display:flex;justify-content:space-between;align-items:center}
+  .cart li{display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.65rem 0;border-bottom:1px dashed var(--line,#e2e8f0);font-size:.9rem;list-style:none}
+  .cart small{color:var(--muted,#64748b)}
+  #cart-total{font-weight:800;margin-top:.8rem;text-align:right}
+  #checkout:disabled{opacity:.45;cursor:not-allowed}
+  .note{font-size:.75rem;color:var(--muted,#64748b);margin-top:.6rem}
+  .toast{position:fixed;left:50%;bottom:1.2rem;transform:translate(-50%,20px);background:#0f172a;color:#fff;padding:.8rem 1.2rem;border-radius:99px;font-size:.9rem;opacity:0;pointer-events:none;transition:.3s;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.25);max-width:90vw;text-align:center}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  footer{max-width:1000px;margin:2rem auto 0;padding:1.5rem 1.2rem;border-top:1px solid var(--line,#e2e8f0);color:var(--muted,#64748b);font-size:.85rem;display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;justify-content:space-between}
+  footer a{color:inherit}
+</style>
 </head>
 <body>
-<header><h1>Il mio shop</h1><button id="cart-btn">Carrello (<span id="cart-count">0</span>)</button></header>
-<main id="products" class="grid"></main>
-<div id="cart" class="cart hidden"><h2>Carrello</h2><ul id="cart-list"></ul><button id="checkout">Vai alla cassa</button></div>
+<a class="skip" href="#prodotti">Salta al contenuto</a>
+
+<header>
+  <a class="brand" href="index.html">🌱 Vivenz'Orto</a>
+  <button id="cart-btn" aria-label="Apri il carrello del ritiro">🛒 Prenotazione <span id="cart-count">0</span></button>
+</header>
+
+<section class="hero">
+  <p class="kicker">Orto familiare · Raccolto del giorno</p>
+  <h1>Il raccolto fresco,<br>prenotato in un tap</h1>
+  <p class="sub">Scegli ciò che è disponibile, prenota i kg che vuoi e ritira di persona: le scorte si aggiornano da sole in tempo reale.</p>
+  <div class="stats">
+    <div class="stat"><strong>12+</strong><span>varietà in stagione</span></div>
+    <div class="stat"><strong>4.9</strong><span>media recensioni clienti</span></div>
+    <div class="stat"><strong>100%</strong><span>km zero, dal nostro orto</span></div>
+    <div class="stat"><strong>24h</strong><span>dalla raccolta al ritiro</span></div>
+  </div>
+</section>
+
+<main id="prodotti">
+  <div class="section-head"><h2>Disponibili oggi</h2><div class="line"></div></div>
+  <div id="products" class="grid"></div>
+</main>
+
+<footer>
+  <span>🌱 Vivenz'Orto · Via dei Campi 12 — ritiro in orto Mar–Sab 8:30–12:30</span>
+  <span><a href="admin.html">Area riservata →</a></span>
+</footer>
+
+<aside id="cart" class="cart hidden" aria-label="Carrello del ritiro">
+  <div class="cart-head">
+    <h2>Il tuo ritiro</h2>
+    <button id="cart-close" class="mini" aria-label="Chiudi carrello">✕</button>
+  </div>
+  <ul id="cart-list"></ul>
+  <p id="cart-total"></p>
+  <button id="checkout">Conferma prenotazione</button>
+  <p class="note">Nessun pagamento online: paghi in contanti o con POS al ritiro in orto.</p>
+</aside>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
 <script src="script.js"></script>
 </body>
 </html>

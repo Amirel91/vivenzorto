@@ -1,14 +1,18 @@
-/* Vivenz'Orto — homepage: offerte in evidenza (scroll orizzontale), ricerca, card compatte, prenotazione in 3 step con scalamento scorte */
+/* Vivenz'Orto — homepage: offerte in evidenza (scroll orizzontale), ricerca, card compatte,
+   prenotazione in 3 step, testi hero + info orto (footer) editabili dall'admin (chiave 'vz_site') */
 'use strict';
 
-// Contratto storage condiviso con admin.html: { id, name, desc, emoji, price (€/kg), stock (kg), sale (bool), salePrice (€/kg) }
+// Contratto storage condiviso con admin.html:
+// prodotti: { id, name, desc, emoji, price (€/kg), stock (kg), threshold, sale (bool), salePrice (€/kg) }
+// sito:     { kicker, title, sub, stats:[{v,l}×4], shopName, address, hours }
 const PRODUCT_KEYS = ['vz_products', 'shop_products', 'products', 'admin_products'];
 const PKEY = PRODUCT_KEYS.find(k => localStorage.getItem(k)) || 'vz_products';
 const OKEY = 'vz_orders';
 const CKEY = 'vz_cart';
-const MKEY = 'vz_me';   // dati cliente per precompilare le prossime prenotazioni
-const LOW_KG = 3;       // soglia "ultimi kg"
-const STEP  = 0.5;      // step di prenotazione in kg
+const MKEY = 'vz_me';     // dati cliente per precompilare le prossime prenotazioni
+const SITEKEY = 'vz_site';// testi hero + footer impostati dal gestionale
+const LOW_KG = 3;         // soglia "ultimi kg"
+const STEP  = 0.5;        // step di prenotazione in kg
 
 const SEED = [
   { id: 1, name: 'Pomodori San Marzano', emoji: '🍅', desc: 'Raccolti a mano, maturazione naturale al sole.', price: 3.50, stock: 18 },
@@ -49,6 +53,55 @@ const inCart     = id => cart.find(i => i.id === id);
 const reservedKg = id => inCart(id)?.kg || 0;
 const dispKg     = p  => Math.max(0, r1((p.stock ?? 0) - reservedKg(p.id)));
 const saveCart   = () => write(CKEY, cart);
+
+/* ---------- Testi del sito: hero + info orto nel footer (modificabili dall'admin) ---------- */
+const SITE_DEFAULT = {
+  kicker: 'Orto familiare · Raccolto del giorno',
+  title:  'Il raccolto fresco,\nprenotato in un tap',
+  sub:    'Scegli ciò che è disponibile, prenota i kg che vuoi e ritira di persona: le scorte si aggiornano da sole in tempo reale.',
+  stats: [
+    { v: '12+',  l: 'varietà in stagione' },
+    { v: '4.9',  l: 'media recensioni clienti' },
+    { v: '100%', l: 'km zero, dal nostro orto' },
+    { v: '24h',  l: 'dalla raccolta al ritiro' }
+  ],
+  shopName: "Vivenz'Orto",
+  address:  'Via dei Campi 12',
+  hours:    'Mar–Sab 8:30–12:30'
+};
+
+function loadSite() {
+  const raw = read(SITEKEY, null) || {};
+  return {
+    ...SITE_DEFAULT,
+    ...raw,
+    kicker: raw.kicker ?? raw.heroKicker ?? SITE_DEFAULT.kicker,
+    title:  raw.title  ?? raw.heroTitle  ?? SITE_DEFAULT.title,
+    sub:    raw.sub    ?? raw.heroSub    ?? SITE_DEFAULT.sub,
+    stats:  Array.isArray(raw.stats) && raw.stats.length ? raw.stats : SITE_DEFAULT.stats
+  };
+}
+let site = loadSite();
+
+function applySite() {
+  const k = document.querySelector('.hero .kicker');
+  if (k) k.textContent = site.kicker;
+  const h1 = document.querySelector('.hero h1');
+  if (h1) h1.innerHTML = esc(site.title).replace(/\n+/g, '<br>');
+  const sub = document.querySelector('.hero .sub');
+  if (sub) sub.textContent = site.sub;
+  document.querySelectorAll('.stats .stat').forEach((el, i) => {
+    const st = site.stats[i];
+    if (!st) return;
+    const v = el.querySelector('strong');
+    const l = el.querySelector('span');
+    if (v) v.textContent = st.v;
+    if (l) l.textContent = st.l;
+  });
+  const f = document.querySelector('footer span');   // primo span = info orto
+  if (f) f.textContent = `🌱 ${site.shopName} · ${site.address} — ritiro in orto ${site.hours}`;
+  document.title = `${site.shopName} — Raccolto fresco, prenotazione al kg`;
+}
 
 function render() { renderOffers(); renderProducts(); renderCart(); }
 
@@ -313,6 +366,8 @@ function toast(msg) {
 /* ---------- Sync con il gestionale aperto in altre schede ---------- */
 window.addEventListener('storage', e => {
   if (e.key === PKEY) { products = read(PKEY, products); render(); }
+  if (e.key === SITEKEY) { site = loadSite(); applySite(); }
 });
 
+applySite();
 render();

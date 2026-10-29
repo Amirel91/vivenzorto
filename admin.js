@@ -1,11 +1,32 @@
-/* Vivenz'Orto — gestionale: login, CRUD prodotti (con offerte), prenotazioni, elimina ordine con ripristino scorte */
+/* Vivenz'Orto — gestionale: login, CRUD prodotti (con offerte), prenotazioni, testi del sito (hero + footer) */
 'use strict';
 
 const PRODUCT_KEYS = ['vz_products', 'shop_products', 'products', 'admin_products'];
 const PKEY = PRODUCT_KEYS.find(k => localStorage.getItem(k)) || 'vz_products';
 const OKEY = 'vz_orders';
 const SKEY = 'vz_admin';
+const SITE_KEY = 'vz_site';
 const PASS = 'admin';
+
+/* Testi del sito: stessi default dell'HTML statico della vetrina */
+const SITE_DEFAULT = {
+  hero: {
+    kicker: 'Orto familiare · Raccolto del giorno',
+    title: 'Il raccolto fresco,\nprenotato in un tap',
+    sub: 'Scegli ciò che è disponibile, prenota i kg che vuoi e ritira di persona: le scorte si aggiornano da sole in tempo reale.',
+    stats: [
+      { v: '12+', l: 'varietà in stagione' },
+      { v: '4.9', l: 'media recensioni clienti' },
+      { v: '100%', l: 'km zero, dal nostro orto' },
+      { v: '24h', l: 'dalla raccolta al ritiro' }
+    ]
+  },
+  info: {
+    shopName: "Vivenz'Orto",
+    address: 'Via dei Campi 12',
+    hours: 'ritiro in orto Mar–Sab 8:30–12:30'
+  }
+};
 
 const esc  = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 const eur  = n => (+n).toFixed(2).replace('.', ',') + ' €';
@@ -16,6 +37,15 @@ const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
 let products = read(PKEY, []);
 let editingId = null;
+
+/* Testi salvati (merge coi default per tollerare chiavi mancanti) */
+let site = (() => {
+  const s = read(SITE_KEY, {});
+  return {
+    hero: { ...SITE_DEFAULT.hero, ...(s.hero || {}) },
+    info: { ...SITE_DEFAULT.info, ...(s.info || {}) }
+  };
+})();
 
 const $ = s => document.querySelector(s);
 
@@ -56,6 +86,7 @@ $('#logout').addEventListener('click', () => {
 function openPanel() {
   $('#gate').classList.add('hidden');
   $('#panel').classList.remove('hidden');
+  fillSettingsForms();
   renderAll();
 }
 
@@ -247,9 +278,59 @@ function resetForm() {
   $('#cancel-edit').classList.add('hidden');
 }
 
+/* ---------- Testi del sito: hero + info orto ---------- */
+function fillSettingsForms() {
+  const hf = $('#hero-form');
+  hf.kicker.value = site.hero.kicker || '';
+  hf.title.value  = site.hero.title || '';
+  hf.sub.value    = site.hero.sub || '';
+  ['1', '2', '3', '4'].forEach((n, i) => {
+    hf['s' + n + 'v'].value = site.hero.stats[i]?.v || '';
+    hf['s' + n + 'l'].value = site.hero.stats[i]?.l || '';
+  });
+  const inf = $('#info-form');
+  inf.shopName.value = site.info.shopName || '';
+  inf.address.value  = site.info.address || '';
+  inf.hours.value    = site.info.hours || '';
+}
+
+function applyShopName() {
+  $('#admin-shop').textContent = site.info.shopName || 'Vivenz\'Orto';
+}
+
+$('#hero-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const f = e.target;
+  const stats = ['1', '2', '3', '4']
+    .map(n => ({ v: f['s' + n + 'v'].value.trim(), l: f['s' + n + 'l'].value.trim() }))
+    .filter(s => s.v && s.l);   // coppie incomplete non vengono mostrate
+  site.hero = {
+    kicker: f.kicker.value.trim(),
+    title:  f.title.value.trim(),
+    sub:    f.sub.value.trim(),
+    stats
+  };
+  write(SITE_KEY, site);
+  toast('Benvenuto della vetrina aggiornato ✓ — apri index.html per vederlo');
+});
+
+$('#info-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const f = e.target;
+  site.info = {
+    shopName: f.shopName.value.trim(),
+    address:  f.address.value.trim(),
+    hours:    f.hours.value.trim()
+  };
+  write(SITE_KEY, site);
+  applyShopName();
+  toast('Info orto aggiornate ✓ — visibili nel footer della vetrina');
+});
+
 function renderAll() { renderAlerts(); renderOrders(); renderProducts(); }
 
 /* ---------- Avvio ---------- */
 if (!localStorage.getItem(PKEY)) write(PKEY, products);
+applyShopName();
 if (sessionStorage.getItem(SKEY)) openPanel();
 window.addEventListener('storage', e => { if (e.key === OKEY) renderOrders(); if (e.key === PKEY) { products = read(PKEY, products); renderAll(); } });

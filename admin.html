@@ -11,12 +11,19 @@
   .f-grid .check input{width:1.05rem;height:1.05rem;accent-color:var(--accent);cursor:pointer;padding:0}
   .sale-chip{display:inline-block;margin-top:.25rem;font-size:.72rem;font-weight:800;color:#92400e;background:#fef3c7;border:1px solid #fde68a;padding:.12rem .5rem;border-radius:99px}
   #p-form .sale-on{border-color:var(--accent);box-shadow:0 0 0 3px rgba(16,185,129,.15)}
+  /* Sezione testi del sito */
+  .sub-h{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:1.3rem 0 .05rem;padding-top:1.1rem;border-top:1px dashed var(--line)}
+  #hero-form .sub-h:first-child,form:first-of-type .sub-h{margin-top:0;padding-top:0;border-top:0}
+  .f-grid .pair{display:grid;grid-template-columns:92px 1fr;gap:.45rem}
+  .f-grid .pair input{min-width:0}
+  .f-grid textarea{resize:vertical;min-height:2.5rem;line-height:1.4}
+  .save-hint{font-size:.74rem;color:var(--muted);margin-top:.4rem}
 </style>
 </head>
 <body class="admin">
 
 <header class="site-header">
-  <a class="logo" href="admin.html"><span aria-hidden="true">🛠️</span> Gestionale Vivenzorto</a>
+  <a class="logo" href="admin.html"><span aria-hidden="true">🛠️</span> Gestionale <span id="admin-shop">Vivenz'Orto</span></a>
   <div class="head-actions">
     <a class="btn-ghost" href="index.html">Vetrina ↗</a>
     <button id="logout" class="btn-danger" type="button">Esci</button>
@@ -69,6 +76,44 @@
     <section class="card">
       <h2>🥬 Prodotti</h2>
       <div id="plist"></div>
+    </section>
+
+    <section class="card">
+      <h2>✍️ Testi del sito</h2>
+      <p class="muted" style="margin-bottom:.2rem">Personalizza il benvenuto e i recap dell'orto nella vetrina: le modifiche sono immediatamente visibili in homepage.</p>
+
+      <form id="hero-form">
+        <p class="sub-h">Benvenuto in vetrina (hero)</p>
+        <div class="f-grid">
+          <label class="full">Etichetta sopra il titolo <input name="kicker" maxlength="60" placeholder="Orto familiare · Raccolto del giorno"></label>
+          <label class="full">Titolo principale <textarea name="title" rows="2" placeholder="Il raccolto fresco,&#10;prenotato in un tap"></textarea></label>
+          <label class="full">Sottotitolo <textarea name="sub" rows="2" placeholder="Descrivi in due righe come funziona la prenotazione"></textarea></label>
+          <label class="full">1ª statistica — numero e descrizione
+            <span class="pair"><input name="s1v" maxlength="8" placeholder="12+"><input name="s1l" maxlength="34" placeholder="varietà in stagione"></span></label>
+          <label class="full">2ª statistica
+            <span class="pair"><input name="s2v" maxlength="8" placeholder="4.9"><input name="s2l" maxlength="34" placeholder="media recensioni clienti"></span></label>
+          <label class="full">3ª statistica
+            <span class="pair"><input name="s3v" maxlength="8" placeholder="100%"><input name="s3l" maxlength="34" placeholder="km zero, dal nostro orto"></span></label>
+          <label class="full">4ª statistica
+            <span class="pair"><input name="s4v" maxlength="8" placeholder="24h"><input name="s4l" maxlength="34" placeholder="dalla raccolta al ritiro"></span></label>
+        </div>
+        <div class="f-actions">
+          <button class="btn-primary" type="submit">Salva benvenuto</button>
+        </div>
+        <p class="save-hint">💡 Nel titolo premi Invio per andare a capo. Svuota numero e descrizione di una statistica per non mostrarla.</p>
+      </form>
+
+      <form id="info-form">
+        <p class="sub-h">Info orto (footer della vetrina)</p>
+        <div class="f-grid">
+          <label>Nome dell'orto <input name="shopName" maxlength="40" placeholder="Vivenz'Orto"></label>
+          <label>Indirizzo <input name="address" maxlength="60" placeholder="Via dei Campi 12"></label>
+          <label class="full">Orari di ritiro <input name="hours" maxlength="80" placeholder="ritiro in orto Mar–Sab 8:30–12:30"></label>
+        </div>
+        <div class="f-actions">
+          <button class="btn-primary" type="submit">Salva info orto</button>
+        </div>
+      </form>
     </section>
 
   </div>

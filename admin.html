@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vivenzorto — Gestionale</title>
 <link rel="stylesheet" href="style.css">
+<style>
+  /* Supplementi specifici del gestionale */
+  .f-grid .check{flex-direction:row;align-items:center;gap:.55rem;text-transform:none;letter-spacing:0;font-size:.88rem;color:var(--ink);cursor:pointer}
+  .f-grid .check input{width:1.05rem;height:1.05rem;accent-color:var(--accent);cursor:pointer;padding:0}
+  .sale-chip{display:inline-block;margin-top:.25rem;font-size:.72rem;font-weight:800;color:#92400e;background:#fef3c7;border:1px solid #fde68a;padding:.12rem .5rem;border-radius:99px}
+  #p-form .sale-on{border-color:var(--accent);box-shadow:0 0 0 3px rgba(16,185,129,.15)}
+</style>
 </head>
 <body class="admin">
 
@@ -21,7 +28,7 @@
   <!-- Login -->
   <section id="gate" class="gate card">
     <h2>Area riservata</h2>
-    <p class="muted">Inserisci la password per gestire prodotti e prenotazioni.</p>
+    <p class="muted">Inserisci la password per gestire prodotti, offerte e prenotazioni.</p>
     <form id="login-form">
       <label>Password <input id="pass" type="password" required></label>
       <button class="btn-primary big" type="submit">Accedi</button>
@@ -49,6 +56,8 @@
           <label class="full">Descrizione <input name="desc" required></label>
           <label>Disponibilità (kg) <input name="available" type="number" step="0.5" min="0" required></label>
           <label>Allerta se sotto (kg) <input name="threshold" type="number" step="0.5" min="0" required></label>
+          <label class="full check"><input type="checkbox" name="sale"> 🔥 Metti in offerta (appare in alto nella vetrina, con prezzo barrato)</label>
+          <label class="full">Prezzo di offerta €/kg <input name="salePrice" type="number" step="0.10" min="0.10" placeholder="Es. 1,99 — serve solo se in offerta"></label>
         </div>
         <div class="f-actions">
           <button class="btn-primary" type="submit">Salva prodotto</button>

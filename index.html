@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vivenz'Orto — Raccolto fresco, prenotazione al kg</title>
-<meta name="description" content="Prenota online frutta e verdura raccolta il giorno stesso da Vivenz'Orto. Scorte in tempo reale, ritiro di persona in orto.">
+<meta name="description" content="Prenota online frutta e verdura raccolta il giorno stesso da Vivenz'Orto. Offerte del giorno, scorte in tempo reale, ritiro di persona in orto.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
 <link rel="stylesheet" href="style.css">
 <style>
@@ -13,20 +13,24 @@
   .skip:focus{left:1rem;top:1rem;z-index:99;background:#0f172a;color:#fff;padding:.5rem .8rem;border-radius:8px}
   .brand{font-weight:800;font-size:1.05rem;text-decoration:none;color:inherit;letter-spacing:-.01em}
   .kicker{display:inline-block;font-size:.76rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent,#059669);background:rgba(16,185,129,.12);padding:.35rem .8rem;border-radius:99px}
-  .hero{max-width:1000px;margin:0 auto;padding:2.4rem 1.2rem 1.2rem}
-  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:.8rem;margin-top:1.6rem}
+  .hero{max-width:1000px;margin:0 auto;padding:1.9rem 1.2rem 1rem}
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:.7rem;margin-top:1.2rem}
   @media(min-width:700px){.stats{grid-template-columns:repeat(4,1fr)}}
-  .stat{background:var(--card,#fff);border:1px solid var(--line,#e2e8f0);border-radius:var(--radius,14px);padding:.9rem 1rem;box-shadow:var(--shadow,0 1px 3px rgba(15,23,42,.06))}
-  .stat strong{display:block;font-size:1.5rem;letter-spacing:-.02em;color:var(--accent,#059669)}
-  .stat span{font-size:.78rem;color:var(--muted,#64748b)}
+  .stat{background:var(--card,#fff);border:1px solid var(--line,#e2e8f0);border-radius:var(--radius,14px);padding:.8rem .95rem;box-shadow:var(--shadow,0 1px 3px rgba(15,23,42,.06))}
+  .stat strong{display:block;font-size:1.4rem;letter-spacing:-.02em;color:var(--accent,#059669)}
+  .stat span{font-size:.75rem;color:var(--muted,#64748b)}
   .price{font-weight:800}
-  .price small{color:var(--muted,#64748b);font-weight:500;font-size:.75rem}
-  .stock{font-size:.8rem;color:var(--muted,#64748b)}
-  .badge{position:absolute;top:.8rem;right:.8rem;font-size:.68rem;font-weight:700;padding:.25rem .55rem;border-radius:99px;background:#fef3c7;color:#92400e}
+  .price small{color:var(--muted,#64748b);font-weight:500;font-size:.72rem}
+  .price s{color:var(--muted);font-weight:500;font-size:.78em}
+  .price .now{color:#d97706}
+  .stock{font-size:.74rem;color:var(--muted,#64748b)}
+  .badge{position:absolute;top:.7rem;right:.7rem;font-size:.66rem;font-weight:700;padding:.22rem .5rem;border-radius:99px;background:#fef3c7;color:#92400e}
   .badge.out{background:#fee2e2;color:#991b1b}
-  .stepper{display:flex;align-items:center;gap:.6rem}
-  .stepper button,.mini{width:34px;height:34px;border-radius:10px;border:1px solid var(--line,#e2e8f0);background:#fff;font-size:1rem;font-weight:700;cursor:pointer;color:var(--ink,#0f172a);display:grid;place-items:center}
-  .stepper .kg{flex:1;text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
+  .badge.sale{background:linear-gradient(120deg,#ef4444,#f97316);color:#fff;box-shadow:0 4px 12px rgba(239,68,68,.35)}
+  .stepper{display:flex;align-items:center;gap:.45rem}
+  .stepper button,.mini{width:30px;height:30px;border-radius:9px;border:1px solid var(--line,#e2e8f0);background:#fff;font-size:.9rem;font-weight:700;cursor:pointer;color:var(--ink,#0f172a);display:grid;place-items:center;transition:border-color .15s,background .15s}
+  .stepper button:hover,.mini:hover{border-color:var(--accent);background:#ecfdf5}
+  .stepper .kg{flex:1;text-align:center;font-weight:600;font-size:.85rem;font-variant-numeric:tabular-nums}
   .soldout{opacity:.55}
   .soldout .stepper,.soldout .product-add{display:none}
   .cart-head{display:flex;justify-content:space-between;align-items:center}
@@ -60,6 +64,21 @@
     <div class="stat"><strong>100%</strong><span>km zero, dal nostro orto</span></div>
     <div class="stat"><strong>24h</strong><span>dalla raccolta al ritiro</span></div>
   </div>
+</section>
+
+<!-- Ricerca -->
+<div class="toolbar" role="search">
+  <div class="search-box">
+    <span class="ico" aria-hidden="true">🔎</span>
+    <input id="search" type="search" placeholder="Cerca nell'orto: pomodori, zucchine, patate…" aria-label="Cerca i prodotti disponibili">
+    <button id="search-clear" class="mini hidden" type="button" aria-label="Azzera la ricerca">✕</button>
+  </div>
+</div>
+
+<!-- Offerte del giorno (carosello orizzontale, impostate dall'admin) -->
+<section id="offerte" aria-label="Prodotti in offerta">
+  <div class="section-head"><h2>🔥 In offerta oggi</h2><div class="line"></div></div>
+  <div id="offers" class="offers"></div>
 </section>
 
 <main id="prodotti">

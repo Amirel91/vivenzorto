@@ -1,4 +1,4 @@
-/* Vivenz'Orto — gestionale: login, CRUD prodotti, prenotazioni con dati cliente, elimina ordine con ripristino scorte (storage condiviso con la homepage) */
+/* Vivenz'Orto — gestionale: login, CRUD prodotti (con offerte), prenotazioni, elimina ordine con ripristino scorte */
 'use strict';
 
 const PRODUCT_KEYS = ['vz_products', 'shop_products', 'products', 'admin_products'];
@@ -10,7 +10,7 @@ const PASS = 'admin';
 const esc  = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 const eur  = n => (+n).toFixed(2).replace('.', ',') + ' €';
 const kg   = n => (+n).toFixed(1).replace('.', ',') + ' kg';
-const r1   = v => Math.round(v * 10) / 10; // arrotonda a 0,1 kg (stesso criterio della vetrina)
+const r1   = v => Math.round(v * 10) / 10;
 const read  = (k, f) => { try { return JSON.parse(localStorage.getItem(k)) ?? f; } catch { return f; } };
 const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
@@ -40,7 +40,7 @@ $('#login-form').addEventListener('submit', e => {
     $('#pass').value = '';
     const g = $('#gate');
     g.classList.remove('shake');
-    void g.offsetWidth; // riavvia l'animazione
+    void g.offsetWidth;
     g.classList.add('shake');
     toast('Password errata, riprova');
   }
@@ -111,21 +111,19 @@ $('#orders').addEventListener('click', e => {
   const chi = order.customer ? `${order.customer.name} ${order.customer.surname}`.trim() : `#${String(id).slice(-4)}`;
   if (!confirm(`Eliminare la prenotazione di ${chi}?\n\nI kg prenotati torneranno disponibili in vetrina.`)) return;
 
-  // 1) Ripristina le scorte: cerca il prodotto per id (fallback sul nome per ordini salvati prima dell'aggiornamento)
   let restored = 0;
   order.items.forEach(it => {
     const p = products.find(x => x.id === it.pid) || products.find(x => x.name === it.name);
     if (p) { p.stock = r1((p.stock ?? 0) + it.kg); restored++; }
   });
-  if (restored) write(PKEY, products); // la homepage aperta in altre schede si aggiorna da sola
+  if (restored) write(PKEY, products);
 
-  // 2) Cancella la prenotazione e aggiorna tutto il pannello (ordini + alert scorte + tabella)
   write(OKEY, read(OKEY, []).filter(o => o.id !== id));
   renderAll();
   toast(restored ? 'Prenotazione eliminata — scorte ripristinate ✓' : 'Prenotazione eliminata');
 });
 
-/* ---------- Prodotti (tabella con barra scorte) ---------- */
+/* ---------- Prodotti (tabella con barra scorte + badge offerta) ---------- */
 function renderProducts() {
   const box = $('#plist');
   if (!products.length) {
@@ -138,9 +136,13 @@ function renderProducts() {
       const th = p.threshold ?? 3, st = p.stock ?? 0;
       const pct = Math.min(100, th > 0 ? (st / (th * 3)) * 100 : (st > 0 ? 100 : 0));
       const cls = st <= 0 ? 'out' : (st <= th ? 'low' : '');
+      const deal = p.sale && p.salePrice > 0 && p.salePrice < p.price;
       return `<tr class="${st <= 0 ? 'out-row' : (st <= th ? 'alert-row' : '')}">
         <td><span class="p-emoji">${esc(p.emoji || '🌿')}</span>${esc(p.name)}</td>
-        <td><strong>${eur(p.price)}</strong><small>/kg</small></td>
+        <td>
+          <strong>${eur(p.price)}</strong><small>/kg</small>
+          ${deal ? `<br><span class="sale-chip">🔥 ${eur(p.salePrice)} in vetrina</span>` : ''}
+        </td>
         <td>
           <div class="bar ${cls}"><span style="width:${pct}%"></span></div>
           <small>${kg(st)}</small>
@@ -169,6 +171,9 @@ $('#plist').addEventListener('click', e => {
     f.price.value = p.price;
     f.available.value = p.stock ?? 0;
     f.threshold.value = p.threshold ?? 3;
+    f.sale.checked = !!(p.sale && p.salePrice);
+    f.salePrice.value = p.salePrice ?? '';
+    f.salePrice.classList.toggle('sale-on', f.sale.checked);
     editingId = p.id;
     $('#form-title').textContent = '✏️ Modifica: ' + p.name;
     $('#cancel-edit').classList.remove('hidden');
@@ -186,17 +191,36 @@ $('#plist').addEventListener('click', e => {
   }
 });
 
-/* ---------- Form crea/modifica ---------- */
+/* ---------- Form crea/modifica (con offerta) ---------- */
+$('#p-form').addEventListener('change', e => {
+  if (e.target.name === 'sale') {
+    e.target.form.salePrice.classList.toggle('sale-on', e.target.checked);
+    if (e.target.checked) e.target.form.salePrice.focus();
+    else e.target.form.salePrice.value = '';
+  }
+});
+
 $('#p-form').addEventListener('submit', e => {
   e.preventDefault();
   const f = e.target;
+  const sale = f.sale.checked;
+  const salePrice = sale && f.salePrice.value ? +(+f.salePrice.value).toFixed(2) : null;
+  if (sale && (!salePrice || salePrice >= +f.price.value)) {
+    f.salePrice.closest('label').classList.add('bad');
+    f.salePrice.focus();
+    return toast('Il prezzo di offerta deve essere inferiore al prezzo normale');
+  }
+  f.salePrice.closest('label').classList.remove('bad');
+
   const data = {
     emoji: f.emoji.value.trim() || '🌿',
     name: f.name.value.trim(),
     desc: f.desc.value.trim(),
     price: +(+f.price.value).toFixed(2),
     stock: Math.max(0, +(+f.available.value).toFixed(1)),
-    threshold: +(+f.threshold.value).toFixed(1)
+    threshold: +(+f.threshold.value).toFixed(1),
+    sale,
+    salePrice
   };
   if (!data.name) return;
   if (editingId) {
@@ -208,13 +232,16 @@ $('#p-form').addEventListener('submit', e => {
   write(PKEY, products);
   resetForm();
   renderAll();
-  toast('Prodotto salvato ✓');
+  toast(sale ? 'Prodotto salvato — in offerta in vetrina 🔥' : 'Prodotto salvato ✓');
 });
 
 $('#cancel-edit').addEventListener('click', resetForm);
 
 function resetForm() {
-  $('#p-form').reset();
+  const f = $('#p-form');
+  f.reset();
+  f.salePrice.classList.remove('sale-on');
+  f.querySelectorAll('label.bad').forEach(l => l.classList.remove('bad'));
   editingId = null;
   $('#form-title').textContent = '➕ Nuovo prodotto';
   $('#cancel-edit').classList.add('hidden');
@@ -225,4 +252,4 @@ function renderAll() { renderAlerts(); renderOrders(); renderProducts(); }
 /* ---------- Avvio ---------- */
 if (!localStorage.getItem(PKEY)) write(PKEY, products);
 if (sessionStorage.getItem(SKEY)) openPanel();
-window.addEventListener('storage', e => { if (e.key === OKEY) renderOrders(); });
+window.addEventListener('storage', e => { if (e.key === OKEY) renderOrders(); if (e.key === PKEY) { products = read(PKEY, products); renderAll(); } });

@@ -1,4 +1,4 @@
-/* Vivenz'Orto — homepage: catalogo dal gestionale (localStorage) + prenotazione con dati cliente e scalamento automatico delle scorte */
+/* Vivenz'Orto — homepage: catalogo dal gestionale (localStorage) + prenotazione in 3 step (riepilogo → dati → conferma) con scalamento automatico delle scorte */
 'use strict';
 
 // Contratto storage condiviso con admin.html: { id, name, desc, emoji, price (€/kg), stock (kg) }
@@ -130,12 +130,13 @@ $('#cart').addEventListener('click', e => {
   saveCart(); render();
 });
 
-/* ---------- Checkout in 2 step: riepilogo → dati cliente ---------- */
+/* ---------- Checkout in 3 step: riepilogo → dati cliente → conferma ---------- */
 function showStep(step) {
-  const data = step === 'data';
+  const data = step === 'data', done = step === 'done';
+  $('#cart-view').classList.toggle('hidden', data || done);
   $('#step-data').classList.toggle('hidden', !data);
-  $('#cart-view').classList.toggle('hidden', data);
-  $('#cart-title').textContent = data ? 'I tuoi dati' : 'Il tuo ritiro';
+  $('#step-done').classList.toggle('hidden', !done);
+  $('#cart-title').textContent = done ? 'Confermato ✓' : (data ? 'I tuoi dati' : 'Il tuo ritiro');
   if (data) prefillCustomer();
 }
 
@@ -187,7 +188,19 @@ $('#cust-form').addEventListener('submit', e => {
     el.setAttribute('aria-invalid', ok ? 'false' : 'true');
     if (!ok && !firstBad) firstBad = el;
   });
-  if (firstBad) { firstBad.focus(); return toast('Controlla i campi evidenziati in rosso'); }
+  if (firstBad) {
+    firstBad.focus();
+    firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return toast('Controlla i campi evidenziati in rosso');
+  }
+
+  // Riepilogo per la schermata di conferma (prima di svuotare il carrello)
+  const recap = cart.map(i => {
+    const p = products.find(x => x.id === i.id);
+    return p ? { name: p.name, kg: i.kg } : null;
+  }).filter(Boolean);
+  const orderTotal = r1(cartTotal());
+  const orderId = Date.now();
 
   // Scala le scorte e registra l'ordine (con contatti) per il gestionale
   cart.forEach(i => {
@@ -196,27 +209,42 @@ $('#cust-form').addEventListener('submit', e => {
   });
   const orders = read(OKEY, []);
   orders.push({
-    id: Date.now(),
+    id: orderId,
     date: new Date().toISOString(),
     customer: data,
     items: cart.map(i => {
       const p = products.find(x => x.id === i.id);
-      return { name: p.name, kg: i.kg, price: p.price, total: r1(i.kg * p.price) };
-    }),
-    total: r1(cartTotal())
+      return p ? { name: p.name, kg: i.kg, price: p.price, total: r1(i.kg * p.price) } : null;
+    }).filter(Boolean),
+    total: orderTotal
   });
   write(OKEY, orders);
   write(PKEY, products);   // aggiornamento immediato delle disponibilità
   write(MKEY, data);       // precompila la prossima prenotazione
+
+  // Svuota carrello e mostra la conferma
   cart = []; qty.clear(); saveCart(); render();
   f.elements.notes.value = '';
-  showStep('cart');
+  $('#done-msg').textContent = `Codice #${String(orderId).slice(-4)} — ti aspettiamo in orto, ${data.name}!`;
+  $('#done-recap').innerHTML = recap.map(r =>
+    `<li><span>${esc(r.name)}</span><strong>${kg(r.kg)}</strong></li>`).join('');
+  $('#done-total').textContent = eur(orderTotal);
+  showStep('done');
+  toast(`Grazie ${data.name}! Prenotazione confermata 🌱`);
+});
+
+$('#done-close').addEventListener('click', () => {
   $('#cart').classList.add('hidden');
-  toast(`Grazie ${data.name}! Prenotazione confermata, ti aspettiamo in orto 🌱`);
+  showStep('cart');
 });
 
 // --- Apertura/chiusura pannello carrello ---
-$('#cart-btn').onclick = () => $('#cart').classList.toggle('hidden');
+$('#cart-btn').onclick = () => {
+  const c = $('#cart');
+  // se riapro dopo una conferma, riparto dal riepilogo
+  if (c.classList.contains('hidden') && !$('#step-done').classList.contains('hidden')) showStep('cart');
+  c.classList.toggle('hidden');
+};
 $('#cart-close').onclick = () => $('#cart').classList.add('hidden');
 document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#cart').classList.add('hidden'); });
 

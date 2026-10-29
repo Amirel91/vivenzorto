@@ -52,15 +52,43 @@ main{padding-bottom:2rem}
 #checkout:hover{box-shadow:0 8px 22px rgba(16,185,129,.4)}
 #checkout:active{transform:scale(.98)}
 #checkout:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+#cart-view{display:flex;flex-direction:column;gap:.9rem;flex:1;min-height:0}
 
-/* ============ Carrello: dati cliente al checkout ============ */
-#checkout-form{display:flex;flex-direction:column;gap:.6rem;border-top:1px dashed var(--line);padding-top:.9rem}
-#checkout-form .c-grid{display:grid;grid-template-columns:1fr 1fr;gap:.55rem}
-#checkout-form .c-grid .full{grid-column:1/-1}
-#checkout-form label{display:flex;flex-direction:column;gap:.25rem;font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
-#checkout-form input{width:100%;padding:.55rem .7rem;font-size:.9rem;border-radius:10px}
-#checkout-form input:user-invalid{border-color:var(--danger);box-shadow:0 0 0 3px rgba(239,68,68,.15)}
-.form-err{font-size:.75rem;color:#991b1b;background:#fee2e2;border:1px solid #fecaca;border-radius:10px;padding:.45rem .7rem}
+/* ============ Checkout step 2: dati cliente (.c-form) ============ */
+#step-data{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:.9rem;animation:rise .3s ease both;padding-right:.15rem}
+.back{align-self:flex-start;padding:.45rem .85rem;border-radius:99px;border:1px solid var(--line);background:var(--card);font-size:.82rem;font-weight:600;color:var(--muted);transition:border-color .18s,background .18s,color .18s}
+.back:hover{border-color:var(--accent);color:var(--ink);background:#ecfdf5}
+.c-form{display:flex;flex-direction:column;gap:.7rem}
+.c-row{display:grid;grid-template-columns:1fr 1fr;gap:.55rem}
+@media(max-width:380px){.c-row{grid-template-columns:1fr}}
+.c-form label{display:flex;flex-direction:column;gap:.3rem;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.c-form .opt{text-transform:none;letter-spacing:0;font-weight:500}
+.c-form input{width:100%;padding:.62rem .75rem;font-size:.95rem;border-radius:10px}
+.c-form label.bad input{border-color:var(--danger);box-shadow:0 0 0 3px rgba(239,68,68,.15);animation:shake .35s ease}
+.field-err{display:none;font-size:.72rem;color:#991b1b;font-weight:600;text-transform:none;letter-spacing:0}
+label.bad .field-err{display:block}
+.c-total-line{display:flex;justify-content:space-between;align-items:center;font-size:.9rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:.7rem}
+.c-total-line strong{font-size:1.15rem;letter-spacing:-.01em;color:var(--ink)}
+.c-submit{width:100%;padding:.88rem;border-radius:12px;background:var(--accent);color:#04110b;font-weight:800;transition:box-shadow .18s,transform .15s}
+.c-submit:hover{box-shadow:0 8px 22px rgba(16,185,129,.4)}
+.c-submit:active{transform:scale(.98)}
+
+/* ============ Checkout step 3: conferma ordine ============ */
+#step-done{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column}
+.done-box{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.55rem;animation:rise .35s ease both}
+.done-check{width:64px;height:64px;border-radius:999px;display:grid;place-items:center;font-size:1.9rem;background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #bbf7d0;animation:pop .5s cubic-bezier(.34,1.56,.64,1) both .1s}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.done-box h3{font-size:1.15rem;letter-spacing:-.01em}
+.done-box p{font-size:.88rem;color:var(--muted);max-width:30ch}
+.done-recap{list-style:none;margin:.3rem 0 0;padding:.7rem .95rem;width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;font-size:.85rem;display:flex;flex-direction:column;gap:.45rem;text-align:left}
+.done-recap li{display:flex;justify-content:space-between;gap:.8rem}
+.done-recap li span:first-child{color:var(--muted)}
+.done-recap li strong{font-variant-numeric:tabular-nums}
+.done-total{width:100%;display:flex;justify-content:space-between;align-items:center;font-size:.92rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:.65rem}
+.done-total strong{font-size:1.15rem;letter-spacing:-.01em;color:var(--ink)}
+.done-actions{display:flex;gap:.55rem;width:100%;margin-top:.9rem}
+.done-actions .btn-primary{flex:1;padding:.8rem}
+.done-actions .btn-ghost{flex:1;display:inline-flex;align-items:center;justify-content:center}
 
 /* ============ Admin: struttura ============ */
 .admin-wrap{max-width:960px;margin:0 auto;width:100%;padding:1.4rem 1.2rem;display:flex;flex-direction:column;gap:1.2rem}
@@ -98,6 +126,7 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(16
 .order{border:1px solid var(--line);border-radius:12px;padding:.9rem 1rem;margin-bottom:.8rem;animation:rise .3s ease both}
 .order-head{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
 .order-head .when{color:var(--muted);font-size:.8rem;margin-right:auto}
+.order-head .who{font-size:.85rem}
 .order-items{list-style:none;margin-top:.7rem;padding:0;display:flex;flex-direction:column;gap:.35rem;font-size:.88rem}
 .order-items li{display:flex;justify-content:space-between;align-items:center;gap:.6rem}
 .order-items li span:first-child{flex:1}
@@ -106,6 +135,9 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(16
 .order-cust{margin-top:.6rem;padding:.55rem .75rem;background:#f8fafc;border:1px solid var(--line);border-radius:10px;font-size:.8rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:.25rem 1.1rem}
 .order-cust strong{color:var(--ink)}
 .order-cust a{color:inherit}
+.order-cust a:hover{color:var(--accent);text-decoration:none}
+.cust-notes{flex-basis:100%;color:var(--muted)}
+.order-cust.legacy span{font-style:italic}
 
 /* ============ Admin: form e tabella ============ */
 .f-grid{display:grid;gap:.9rem;grid-template-columns:1fr}

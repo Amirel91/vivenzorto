@@ -82,7 +82,7 @@
   <div id="cart-view">
     <ul id="cart-list"></ul>
     <p id="cart-total"></p>
-    <button id="checkout">Conferma prenotazione</button>
+    <button id="checkout">Continua — inserisci i tuoi dati</button>
   </div>
 
   <!-- Step 2: dati per il ritiro -->
@@ -101,9 +101,21 @@
         <small class="field-err">Email non valida</small></label>
       <label>Note per il ritiro <span class="opt">(facoltative)</span>
         <input name="notes" placeholder="Es. passo a ritirare verso le 10:30"></label>
-      <p class="c-total-line">Totale da pagare al ritivo: <strong id="step-total"></strong></p>
-      <button class="c-submit" type="submit">Invia prenotazione 🌱</button>
+      <p class="c-total-line">Totale da pagare al ritiro: <strong id="step-total"></strong></p>
+      <button class="c-submit" type="submit">Confermo l'ordine 🌱</button>
     </form>
+  </div>
+
+  <!-- Step 3: ordine confermato -->
+  <div id="step-done" class="hidden" aria-live="polite">
+    <div class="done-box">
+      <div class="done-ico">🌱</div>
+      <h3>Prenotazione confermata!</h3>
+      <p id="done-msg"></p>
+      <ul class="done-recap" id="done-recap"></ul>
+      <p class="done-total">Da pagare al ritiro: <strong id="done-total"></strong></p>
+      <button id="done-close" class="c-submit" type="button">Perfetto, a presto! 👋</button>
+    </div>
   </div>
 
   <p class="note">Nessun pagamento online: paghi in contanti o con POS al ritiro in orto.</p>

@@ -1,4 +1,4 @@
-/* Vivenz'Orto — gestionale: login, CRUD prodotti, prenotazioni e alert scorte (storage condiviso con la homepage) */
+/* Vivenz'Orto — gestionale: login, CRUD prodotti, prenotazioni con dati cliente e alert scorte (storage condiviso con la homepage) */
 'use strict';
 
 const PRODUCT_KEYS = ['vz_products', 'shop_products', 'products', 'admin_products'];
@@ -68,7 +68,7 @@ function renderAlerts() {
   ].join('');
 }
 
-/* ---------- Prenotazioni ---------- */
+/* ---------- Prenotazioni (con contatti cliente) ---------- */
 function renderOrders() {
   const orders = read(OKEY, []).slice().reverse();
   const box = $('#orders');
@@ -78,12 +78,19 @@ function renderOrders() {
   }
   box.innerHTML = orders.map(o => {
     const d = new Date(o.date).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
+    const c = o.customer;
     return `<div class="order">
       <div class="order-head">
         <strong>📦 #${String(o.id).slice(-4)}</strong>
+        ${c ? `<span class="who">👤 ${esc(c.name)} ${esc(c.surname)}</span>` : ''}
         <span class="when">${esc(d)}</span>
         <button class="icon-btn" data-del-order="${o.id}" aria-label="Elimina prenotazione">🗑</button>
       </div>
+      ${c ? `<div class="order-cust">
+          <a href="tel:${esc(c.phone.replace(/\s/g, ''))}">📞 ${esc(c.phone)}</a>
+          <a href="mailto:${esc(c.email)}">✉️ ${esc(c.email)}</a>
+          ${c.notes ? `<span class="cust-notes">📝 ${esc(c.notes)}</span>` : ''}
+      </div>` : '<div class="order-cust legacy"><span>📭 Prenotazione senza dati cliente (precedente all\'aggiornamento)</span></div>'}
       <ul class="order-items">
         ${o.items.map(it => `<li><span>${esc(it.name)}</span><span class="qty">${kg(it.kg)} × ${eur(it.price)}</span><strong>${eur(it.total)}</strong></li>`).join('')}
       </ul>

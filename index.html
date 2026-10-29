@@ -74,12 +74,38 @@
 
 <aside id="cart" class="cart hidden" aria-label="Carrello del ritiro">
   <div class="cart-head">
-    <h2>Il tuo ritiro</h2>
+    <h2 id="cart-title">Il tuo ritiro</h2>
     <button id="cart-close" class="mini" aria-label="Chiudi carrello">✕</button>
   </div>
-  <ul id="cart-list"></ul>
-  <p id="cart-total"></p>
-  <button id="checkout">Conferma prenotazione</button>
+
+  <!-- Step 1: riepilogo -->
+  <div id="cart-view">
+    <ul id="cart-list"></ul>
+    <p id="cart-total"></p>
+    <button id="checkout">Conferma prenotazione</button>
+  </div>
+
+  <!-- Step 2: dati per il ritiro -->
+  <div id="step-data" class="hidden">
+    <button id="back-cart" class="btn-ghost back" type="button">← Torna al riepilogo</button>
+    <form id="cust-form" class="c-form" novalidate>
+      <div class="c-row">
+        <label>Nome <input name="fname" autocomplete="given-name" required>
+          <small class="field-err">Inserisci il nome</small></label>
+        <label>Cognome <input name="lname" autocomplete="family-name" required>
+          <small class="field-err">Inserisci il cognome</small></label>
+      </div>
+      <label>Telefono <input name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="333 1234567" required>
+        <small class="field-err">Numero non valido</small></label>
+      <label>Email <input name="email" type="email" inputmode="email" autocomplete="email" placeholder="nome@email.it" required>
+        <small class="field-err">Email non valida</small></label>
+      <label>Note per il ritiro <span class="opt">(facoltative)</span>
+        <input name="notes" placeholder="Es. passo a ritirare verso le 10:30"></label>
+      <p class="c-total-line">Totale da pagare al ritivo: <strong id="step-total"></strong></p>
+      <button class="c-submit" type="submit">Invia prenotazione 🌱</button>
+    </form>
+  </div>
+
   <p class="note">Nessun pagamento online: paghi in contanti o con POS al ritiro in orto.</p>
 </aside>
 

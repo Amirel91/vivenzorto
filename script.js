@@ -1,4 +1,4 @@
-/* Vivenz'Orto — homepage: catalogo dal gestionale (localStorage) + prenotazione con scalamento automatico delle scorte */
+/* Vivenz'Orto — homepage: catalogo dal gestionale (localStorage) + prenotazione con dati cliente e scalamento automatico delle scorte */
 'use strict';
 
 // Contratto storage condiviso con admin.html: { id, name, desc, emoji, price (€/kg), stock (kg) }
@@ -6,13 +6,14 @@ const PRODUCT_KEYS = ['vz_products', 'shop_products', 'products', 'admin_product
 const PKEY = PRODUCT_KEYS.find(k => localStorage.getItem(k)) || 'vz_products';
 const OKEY = 'vz_orders';
 const CKEY = 'vz_cart';
+const MKEY = 'vz_me';    // dati cliente salvati per precompilare le prossime prenotazioni
 const LOW_KG = 3;   // soglia "ultimi kg", stesso criterio degli alert del pannello admin
 const STEP  = 0.5;  // step di prenotazione in kg
 
 // Catalogo iniziale di esempio: l'admin lo sostituisce dal gestionale
 const SEED = [
   { id: 1, name: 'Pomodori San Marzano', emoji: '🍅', desc: 'Raccolti a mano, maturazione naturale al sole.', price: 3.50, stock: 18 },
-  { id: 2, name: 'Zucchine romanesche',  emoji: '🥒', desc: 'Fiori attaccati, croccanti, raccolo di stamattina.', price: 2.80, stock: 6 },
+  { id: 2, name: 'Zucchine romanesche',  emoji: '🥒', desc: 'Fiori attaccati, croccanti, raccolte di stamattina.', price: 2.80, stock: 6 },
   { id: 3, name: 'Patate a buccia rossa',emoji: '🥔', desc: 'Da terreno vulcanico, sapore intenso e farinoso.', price: 1.90, stock: 40 },
   { id: 4, name: 'Cipolle dorate',       emoji: '🧅', desc: 'Dolci e croccanti, perfette anche agrodolce.', price: 2.20, stock: 3 },
   { id: 5, name: 'Peperoni gialli',      emoji: '🫑', desc: 'Carnosi e dolci, arrostiti sono una delizia.', price: 3.90, stock: 9 },
@@ -25,6 +26,9 @@ const kg  = n => n.toFixed(1).replace('.', ',') + ' kg';
 const r1  = v => Math.round(v * 10) / 10; // arrotonda a 0,1
 const read  = (k, f) => { try { return JSON.parse(localStorage.getItem(k)) ?? f; } catch { return f; } };
 const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+const validPhone = v => /^[+\d][\d\s.\-()/]{4,}$/.test(v.trim());
+const validEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
 
 if (!localStorage.getItem(PKEY)) write(PKEY, SEED);
 let products = read(PKEY, SEED);
@@ -126,10 +130,66 @@ $('#cart').addEventListener('click', e => {
   saveCart(); render();
 });
 
-// --- Conferma: scala le scorte e registra l'ordine per il gestionale ---
+/* ---------- Checkout in 2 step: riepilogo → dati cliente ---------- */
+function showStep(step) {
+  const data = step === 'data';
+  $('#step-data').classList.toggle('hidden', !data);
+  $('#cart-view').classList.toggle('hidden', data);
+  $('#cart-title').textContent = data ? 'I tuoi dati' : 'Il tuo ritiro';
+  if (data) prefillCustomer();
+}
+
 $('#checkout').addEventListener('click', () => {
   if (!cart.length) return;
-  const total = cartTotal();
+  $('#step-total').textContent = eur(cartTotal());
+  showStep('data');
+});
+
+$('#back-cart').addEventListener('click', () => showStep('cart'));
+
+function prefillCustomer() {
+  const me = read(MKEY, null);
+  const f = $('#cust-form');
+  if (me) {
+    f.elements.fname.value = me.name || '';
+    f.elements.lname.value = me.surname || '';
+    f.elements.phone.value = me.phone || '';
+    f.elements.email.value = me.email || '';
+  }
+  f.querySelectorAll('label.bad').forEach(l => l.classList.remove('bad'));
+}
+
+$('#cust-form').addEventListener('input', e => {
+  const lab = e.target.closest('label');
+  if (lab) { lab.classList.remove('bad'); e.target.setAttribute('aria-invalid', 'false'); }
+});
+
+$('#cust-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const f = e.target;
+  const data = {
+    name:    f.elements.fname.value.trim(),
+    surname: f.elements.lname.value.trim(),
+    phone:   f.elements.phone.value.trim(),
+    email:   f.elements.email.value.trim(),
+    notes:   f.elements.notes.value.trim()
+  };
+  const checks = {
+    fname:  data.name.length >= 2,
+    lname:  data.surname.length >= 2,
+    phone:  validPhone(data.phone),
+    email:  validEmail(data.email)
+  };
+  let firstBad = null;
+  Object.entries(checks).forEach(([k, ok]) => {
+    const el = f.elements[k];
+    el.closest('label').classList.toggle('bad', !ok);
+    el.setAttribute('aria-invalid', ok ? 'false' : 'true');
+    if (!ok && !firstBad) firstBad = el;
+  });
+  if (firstBad) { firstBad.focus(); return toast('Controlla i campi evidenziati in rosso'); }
+
+  // Scala le scorte e registra l'ordine (con contatti) per il gestionale
   cart.forEach(i => {
     const p = products.find(x => x.id === i.id);
     if (p) p.stock = Math.max(0, r1(p.stock - i.kg));
@@ -138,17 +198,21 @@ $('#checkout').addEventListener('click', () => {
   orders.push({
     id: Date.now(),
     date: new Date().toISOString(),
+    customer: data,
     items: cart.map(i => {
       const p = products.find(x => x.id === i.id);
       return { name: p.name, kg: i.kg, price: p.price, total: r1(i.kg * p.price) };
     }),
-    total: r1(total)
+    total: r1(cartTotal())
   });
   write(OKEY, orders);
   write(PKEY, products);   // aggiornamento immediato delle disponibilità
+  write(MKEY, data);       // precompila la prossima prenotazione
   cart = []; qty.clear(); saveCart(); render();
+  f.elements.notes.value = '';
+  showStep('cart');
   $('#cart').classList.add('hidden');
-  toast('Prenotazione confermata! Ti aspettiamo per il ritiro 🌱');
+  toast(`Grazie ${data.name}! Prenotazione confermata, ti aspettiamo in orto 🌱`);
 });
 
 // --- Apertura/chiusura pannello carrello ---

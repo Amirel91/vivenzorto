@@ -19,6 +19,10 @@ header,.site-header{position:sticky;top:0;z-index:50;display:flex;justify-conten
 #cart-btn:active{transform:scale(.96)}
 #cart-count{display:inline-flex;align-items:center;justify-content:center;min-width:1.4rem;height:1.4rem;padding:0 .3rem;background:var(--accent);color:#04110b;border-radius:99px;font-size:.78rem;font-weight:800}
 
+/* ============ Hero (vetrina) ============ */
+.hero h1{font-size:clamp(2rem,6vw,3.2rem);line-height:1.06;letter-spacing:-.03em;font-weight:800;background:linear-gradient(120deg,var(--ink) 30%,#047857);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero .sub{color:var(--muted);max-width:48ch;margin-top:.8rem;font-size:1rem}
+
 /* ============ Sezioni e griglia prodotti ============ */
 main{padding-bottom:2rem}
 .section-head{max-width:1000px;margin:1.4rem auto .5rem;padding:0 1.2rem;display:flex;align-items:center;gap:1rem}
@@ -40,13 +44,23 @@ main{padding-bottom:2rem}
 .product-add:active{transform:scale(.97)}
 
 /* ============ Carrello (drawer) ============ */
-.cart{position:fixed;top:0;right:0;bottom:0;width:min(380px,94vw);height:100dvh;background:var(--card);z-index:100;padding:1.3rem;display:flex;flex-direction:column;gap:.9rem;box-shadow:-16px 0 48px rgba(15,23,42,.22);border-left:1px solid var(--line)}
+.cart{position:fixed;top:0;right:0;bottom:0;width:min(380px,94vw);height:100dvh;background:var(--card);z-index:100;padding:1.3rem;display:flex;flex-direction:column;gap:.9rem;box-shadow:-16px 0 48px rgba(15,23,42,.22);border-left:1px solid var(--line);animation:slideIn .28s ease both}
 .cart h2{font-size:1.15rem;letter-spacing:-.01em}
+.cart h3{font-size:.95rem;letter-spacing:-.01em}
 #cart-list{flex:1;overflow-y:auto;margin:0;padding:0;list-style:none}
 #checkout{width:100%;padding:.88rem;border-radius:12px;background:var(--accent);color:#04110b;font-weight:800;transition:box-shadow .18s,transform .15s,opacity .18s}
 #checkout:hover{box-shadow:0 8px 22px rgba(16,185,129,.4)}
 #checkout:active{transform:scale(.98)}
 #checkout:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+
+/* ============ Carrello: dati cliente al checkout ============ */
+#checkout-form{display:flex;flex-direction:column;gap:.6rem;border-top:1px dashed var(--line);padding-top:.9rem}
+#checkout-form .c-grid{display:grid;grid-template-columns:1fr 1fr;gap:.55rem}
+#checkout-form .c-grid .full{grid-column:1/-1}
+#checkout-form label{display:flex;flex-direction:column;gap:.25rem;font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+#checkout-form input{width:100%;padding:.55rem .7rem;font-size:.9rem;border-radius:10px}
+#checkout-form input:user-invalid{border-color:var(--danger);box-shadow:0 0 0 3px rgba(239,68,68,.15)}
+.form-err{font-size:.75rem;color:#991b1b;background:#fee2e2;border:1px solid #fecaca;border-radius:10px;padding:.45rem .7rem}
 
 /* ============ Admin: struttura ============ */
 .admin-wrap{max-width:960px;margin:0 auto;width:100%;padding:1.4rem 1.2rem;display:flex;flex-direction:column;gap:1.2rem}
@@ -89,6 +103,9 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(16
 .order-items li span:first-child{flex:1}
 .order-items .qty{color:var(--muted);font-variant-numeric:tabular-nums}
 .order-total{margin-top:.6rem;text-align:right;font-size:.95rem}
+.order-cust{margin-top:.6rem;padding:.55rem .75rem;background:#f8fafc;border:1px solid var(--line);border-radius:10px;font-size:.8rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:.25rem 1.1rem}
+.order-cust strong{color:var(--ink)}
+.order-cust a{color:inherit}
 
 /* ============ Admin: form e tabella ============ */
 .f-grid{display:grid;gap:.9rem;grid-template-columns:1fr}
@@ -120,5 +137,6 @@ tr.alert-row{animation:flash 1.8s infinite}
 /* ============ Utilità e animazioni ============ */
 .hidden{display:none!important}
 @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes slideIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}

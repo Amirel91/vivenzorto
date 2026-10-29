@@ -214,7 +214,8 @@ $('#cust-form').addEventListener('submit', e => {
     customer: data,
     items: cart.map(i => {
       const p = products.find(x => x.id === i.id);
-      return p ? { name: p.name, kg: i.kg, price: p.price, total: r1(i.kg * p.price) } : null;
+      // pid = id prodotto: consente al gestionale di ripristinare le scorte se l'ordine viene eliminato
+      return p ? { pid: p.id, name: p.name, kg: i.kg, price: p.price, total: r1(i.kg * p.price) } : null;
     }).filter(Boolean),
     total: orderTotal
   });

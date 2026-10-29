@@ -1,4 +1,4 @@
-/* Vivenz'Orto — gestionale: login, CRUD prodotti, prenotazioni con dati cliente e alert scorte (storage condiviso con la homepage) */
+/* Vivenz'Orto — gestionale: login, CRUD prodotti, prenotazioni con dati cliente, elimina ordine con ripristino scorte (storage condiviso con la homepage) */
 'use strict';
 
 const PRODUCT_KEYS = ['vz_products', 'shop_products', 'products', 'admin_products'];
@@ -10,6 +10,7 @@ const PASS = 'admin';
 const esc  = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 const eur  = n => (+n).toFixed(2).replace('.', ',') + ' €';
 const kg   = n => (+n).toFixed(1).replace('.', ',') + ' kg';
+const r1   = v => Math.round(v * 10) / 10; // arrotonda a 0,1 kg (stesso criterio della vetrina)
 const read  = (k, f) => { try { return JSON.parse(localStorage.getItem(k)) ?? f; } catch { return f; } };
 const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
@@ -84,7 +85,7 @@ function renderOrders() {
         <strong>📦 #${String(o.id).slice(-4)}</strong>
         ${c ? `<span class="who">👤 ${esc(c.name)} ${esc(c.surname)}</span>` : ''}
         <span class="when">${esc(d)}</span>
-        <button class="icon-btn" data-del-order="${o.id}" aria-label="Elimina prenotazione">🗑</button>
+        <button class="icon-btn" data-del-order="${o.id}" title="Elimina prenotazione" aria-label="Elimina prenotazione di ${c ? esc(c.name) : String(o.id).slice(-4)}">🗑</button>
       </div>
       ${c ? `<div class="order-cust">
           <a href="tel:${esc(c.phone.replace(/\s/g, ''))}">📞 ${esc(c.phone)}</a>
@@ -99,12 +100,29 @@ function renderOrders() {
   }).join('');
 }
 
+/* ---------- Elimina prenotazione: conferma + ripristino scorte ---------- */
 $('#orders').addEventListener('click', e => {
   const b = e.target.closest('[data-del-order]');
   if (!b) return;
-  write(OKEY, read(OKEY, []).filter(o => o.id !== +b.dataset.delOrder));
-  renderOrders();
-  toast('Prenotazione eliminata');
+  const id = +b.dataset.delOrder;
+  const order = read(OKEY, []).find(o => o.id === id);
+  if (!order) return;
+
+  const chi = order.customer ? `${order.customer.name} ${order.customer.surname}`.trim() : `#${String(id).slice(-4)}`;
+  if (!confirm(`Eliminare la prenotazione di ${chi}?\n\nI kg prenotati torneranno disponibili in vetrina.`)) return;
+
+  // 1) Ripristina le scorte: cerca il prodotto per id (fallback sul nome per ordini salvati prima dell'aggiornamento)
+  let restored = 0;
+  order.items.forEach(it => {
+    const p = products.find(x => x.id === it.pid) || products.find(x => x.name === it.name);
+    if (p) { p.stock = r1((p.stock ?? 0) + it.kg); restored++; }
+  });
+  if (restored) write(PKEY, products); // la homepage aperta in altre schede si aggiorna da sola
+
+  // 2) Cancella la prenotazione e aggiorna tutto il pannello (ordini + alert scorte + tabella)
+  write(OKEY, read(OKEY, []).filter(o => o.id !== id));
+  renderAll();
+  toast(restored ? 'Prenotazione eliminata — scorte ripristinate ✓' : 'Prenotazione eliminata');
 });
 
 /* ---------- Prodotti (tabella con barra scorte) ---------- */

@@ -43,7 +43,7 @@ let query = '';         // testo di ricerca
 const $ = s => document.querySelector(s);
 const searchEl  = $('#search') || $('#q');
 const offersBox = $('#offers-strip') || $('#offers');
-const offersSec = $('#offers-sec') || $('#offers-section');
+const offersSec = $('#offers-sec') || $('#offers-section') || $('#offerte');
 
 const inCart     = id => cart.find(i => i.id === id);
 const reservedKg = id => inCart(id)?.kg || 0;
@@ -161,7 +161,17 @@ $('#products').addEventListener('click', gridAction);
 if (offersBox) offersBox.addEventListener('click', gridAction);
 
 /* ---------- Ricerca live ---------- */
-if (searchEl) searchEl.addEventListener('input', () => { query = searchEl.value; renderProducts(); });
+if (searchEl) {
+  searchEl.addEventListener('input', () => { query = searchEl.value; renderProducts(); });
+  const clearBtn = $('#search-clear');
+  if (clearBtn) {
+    searchEl.addEventListener('input', () => clearBtn.classList.toggle('hidden', !searchEl.value));
+    clearBtn.addEventListener('click', () => {
+      searchEl.value = ''; query = ''; clearBtn.classList.add('hidden');
+      renderProducts(); searchEl.focus();
+    });
+  }
+}
 
 /* ---------- Interazioni carrello ---------- */
 $('#cart').addEventListener('click', e => {

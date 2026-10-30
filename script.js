@@ -11,7 +11,7 @@ const OKEY = 'vz_orders';
 const CKEY = 'vz_cart';
 const MKEY = 'vz_me';     // dati cliente per precompilare le prossime prenotazioni
 const SITEKEY = 'vz_site';// testi hero + footer impostati dal gestionale
-const LOGO = '🥬';        // emoji del marchio (header, footer, favicon)
+const LOGO = '🍅';        // emoji del marchio (header, footer, favicon)
 const LOW_KG = 3;         // soglia "ultimi kg"
 const STEP  = 0.5;        // step di prenotazione in kg
 

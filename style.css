@@ -24,6 +24,7 @@ header,.site-header{position:sticky;top:0;z-index:50;display:flex;justify-conten
 #cart-btn:hover{background:var(--accent);color:#04110b;box-shadow:0 6px 18px rgba(16,185,129,.35)}
 #cart-btn:active{transform:scale(.96)}
 #cart-count{display:inline-flex;align-items:center;justify-content:center;min-width:1.4rem;height:1.4rem;padding:0 .3rem;background:var(--accent);color:#04110b;border-radius:99px;font-size:.78rem;font-weight:800}
+#cart-count.bump{animation:bump .5s cubic-bezier(.34,1.56,.64,1)}
 
 /* ============ Hero (vetrina) ============ */
 .hero{max-width:1000px;margin:0 auto;padding:1.9rem 1.2rem 1rem;width:100%}
@@ -64,6 +65,7 @@ main{padding-bottom:2rem}
 .product-add{margin-top:auto;width:100%;padding:.48rem;border-radius:10px;background:var(--dark);color:#fff;font-weight:700;font-size:.8rem;transition:background .18s,transform .15s,box-shadow .18s}
 .product-add:hover{background:var(--accent);color:#04110b;box-shadow:0 6px 18px rgba(16,185,129,.35)}
 .product-add:active{transform:scale(.97)}
+.product-add.done{background:var(--accent);color:#04110b;animation:bump .45s cubic-bezier(.34,1.56,.64,1)}
 .stock{font-size:.68rem;color:var(--muted)}
 .badge{position:absolute;top:.45rem;right:.45rem;font-size:.58rem;font-weight:800;padding:.14rem .42rem;border-radius:99px;background:#fef3c7;color:#92400e;letter-spacing:.02em}
 .badge.out{background:#fee2e2;color:#991b1b}
@@ -74,6 +76,8 @@ main{padding-bottom:2rem}
 .stepper .kg{flex:1;text-align:center;font-weight:600;font-size:.75rem;font-variant-numeric:tabular-nums}
 .soldout{opacity:.55}
 .soldout .stepper,.soldout .product-add{display:none}
+/* Feedback "aggiunto al carrello": anello verde + micro-rimbalzo, senza re-render della griglia */
+.product.just-added{animation:card-ok .6s cubic-bezier(.34,1.56,.64,1);z-index:1}
 
 /* ============ Pulsanti mini (carrello, ricerca, chiusura) ============ */
 .mini{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:#fff;font-size:.9rem;font-weight:700;cursor:pointer;color:var(--ink);display:grid;place-items:center;flex:none;transition:border-color .15s,background .15s}
@@ -93,6 +97,7 @@ main{padding-bottom:2rem}
 .o-price strong{color:#d97706;font-size:1.05rem;font-weight:800;letter-spacing:-.01em}
 .o-price small{color:var(--muted);font-size:.66rem;font-weight:500}
 .offer-card .product-add{font-size:.8rem;padding:.5rem}
+.offer-card.just-added{animation:card-ok .6s cubic-bezier(.34,1.56,.64,1);z-index:1}
 
 /* ============ Carrello (drawer) ============ */
 .cart{position:fixed;top:0;right:0;bottom:0;width:min(380px,94vw);height:100dvh;background:var(--card);z-index:100;padding:1.3rem;display:flex;flex-direction:column;gap:.9rem;box-shadow:-16px 0 48px rgba(15,23,42,.22);border-left:1px solid var(--line);animation:slideIn .28s ease both}
@@ -100,7 +105,7 @@ main{padding-bottom:2rem}
 .cart h3{font-size:.95rem;letter-spacing:-.01em}
 .cart-head{display:flex;justify-content:space-between;align-items:center}
 #cart-list{flex:1;overflow-y:auto;margin:0;padding:0;list-style:none}
-#cart-list li{display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.65rem 0;border-bottom:1px dashed var(--line);font-size:.9rem;list-style:none}
+#cart-list li{display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.65rem 0;border-bottom:1px dashed var(--line);font-size:.9rem;list-style:none;animation:rise .3s ease both}
 #cart-list small{color:var(--muted)}
 #cart-total{font-weight:800;margin-top:.8rem;text-align:right}
 #checkout{width:100%;padding:.88rem;border-radius:12px;background:var(--accent);color:#04110b;font-weight:800;transition:box-shadow .18s,transform .15s,opacity .18s}
@@ -237,4 +242,7 @@ tr.alert-row{animation:flash 1.8s infinite}
 @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes slideIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+/* Feedback aggiunta al carrello: badge e bottone rimbalzano, la card emette un anello verde che si espande */
+@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+@keyframes card-ok{0%{transform:scale(1);box-shadow:0 0 0 0 rgba(16,185,129,.45)}45%{transform:scale(1.035)}100%{transform:scale(1);box-shadow:0 0 0 14px rgba(16,185,129,0)}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}

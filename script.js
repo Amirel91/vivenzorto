@@ -1,5 +1,5 @@
-/* Vivenz'Orto — homepage: offerte in evidenza (scroll orizzontale), ricerca, card compatte,
-   prenotazione in 3 step, testi hero + info orto (footer) editabili dall'admin (chiave 'vz_site') */
+/* Vivenz'Orto — homepage: offerte, ricerca, prenotazione in 3 step, testi editabili dall'admin.
+   Aggiunta al carrello senza re-render: patch chirurgica della card + animazione fly-to-cart. */
 'use strict';
 
 // Contratto storage condiviso con admin.html:
@@ -9,11 +9,11 @@ const PRODUCT_KEYS = ['vz_products', 'shop_products', 'products', 'admin_product
 const PKEY = PRODUCT_KEYS.find(k => localStorage.getItem(k)) || 'vz_products';
 const OKEY = 'vz_orders';
 const CKEY = 'vz_cart';
-const MKEY = 'vz_me';     // dati cliente per precompilare le prossime prenotazioni
-const SITEKEY = 'vz_site';// testi hero + footer impostati dal gestionale
-const LOGO = '🍅';        // emoji del marchio (header, footer, favicon)
-const LOW_KG = 3;         // soglia "ultimi kg"
-const STEP  = 0.5;        // step di prenotazione in kg
+const MKEY = 'vz_me';      // dati cliente per precompilare le prossime prenotazioni
+const SITEKEY = 'vz_site'; // testi hero + footer impostati dal gestionale
+const LOGO = '🍅';         // emoji del marchio (header, footer, favicon)
+const LOW_KG = 3;          // soglia "ultimi kg"
+const STEP  = 0.5;         // step di prenotazione in kg
 
 const SEED = [
   { id: 1, name: 'Pomodori San Marzano', emoji: '🍅', desc: 'Raccolti a mano, maturazione naturale al sole.', price: 3.50, stock: 18 },
@@ -33,6 +33,7 @@ const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
 const validPhone = v => /^[+\d][\d\s.\-()/]{4,}$/.test(v.trim());
 const validEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
+const prefersReduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // Prezzo effettivo: se il prodotto è in offerta con prezzo valido, vale il prezzo scontato
 const effPrice = p => (p.sale && p.salePrice > 0 && p.salePrice < p.price) ? p.salePrice : p.price;
@@ -98,7 +99,6 @@ function applySite() {
   const sub = document.querySelector('.hero .sub');
   if (sub) sub.textContent = site.hero.sub;
 
-  // Statistiche: aggiorna quelle esistenti, aggiunge le mancanti, nasconde le sforate
   const statsBox = document.querySelector('.stats');
   if (statsBox) {
     statsBox.innerHTML = site.hero.stats.map(st =>
@@ -112,58 +112,147 @@ function applySite() {
   document.title = `${site.info.shopName} — Raccolto fresco, prenotazione al kg`;
 }
 
-function render() { renderOffers(); renderProducts(); renderCart(); }
+/* ---------- Rendering ---------- */
+// `animate` è vero solo al primo caricamento: le animazioni d'ingresso delle card
+// sono scoperate alla classe .animate del contenitore, così i refresh successivi
+// (ricerca, aggiunte al carrello, sync tra schede) non fanno "flashare" la griglia.
+function render(animate = false) { renderOffers(animate); renderProducts(animate); renderCart(); }
 
-/* ---------- Striscia offerte (scroll orizzontale) ---------- */
-function renderOffers() {
+const offerHTML = p => `
+  <article class="offer-card" data-id="${p.id}">
+    <span class="offer-tag">🔥 -${sconto(p)}%</span>
+    <div class="sym">${esc(p.emoji || '🌿')}</div>
+    <h3>${esc(p.name)}</h3>
+    <p class="o-price"><s>${eur(p.price)}</s> <strong>${eur(effPrice(p))}</strong><small>/kg</small></p>
+    <p class="stock">Disponibili: <strong>${kg(dispKg(p))}</strong></p>
+    <button class="product-add" data-act="add" data-id="${p.id}">Prenota</button>
+  </article>`;
+
+function renderOffers(animate = false) {
   if (!offersBox) return;
   const deals = products.filter(p => isSale(p) && dispKg(p) > 0);
   if (offersSec) offersSec.classList.toggle('hidden', !deals.length);
-  if (!deals.length) { offersBox.innerHTML = ''; return; }
-  offersBox.innerHTML = deals.map(p => `
-    <article class="offer-card">
-      <span class="offer-tag">🔥 -${sconto(p)}%</span>
-      <div class="sym">${esc(p.emoji || '🌿')}</div>
-      <h3>${esc(p.name)}</h3>
-      <p class="o-price"><s>${eur(p.price)}</s> <strong>${eur(effPrice(p))}</strong><small>/kg</small></p>
-      <p class="stock">Disponibili: <strong>${kg(dispKg(p))}</strong></p>
-      <button class="product-add" data-act="add" data-id="${p.id}">Prenota</button>
-    </article>`).join('');
+  offersBox.classList.toggle('animate', !!animate && !!deals.length);
+  offersBox.innerHTML = deals.map(offerHTML).join('');
 }
 
-/* ---------- Griglia prodotti (card compatte, filtrate dalla ricerca) ---------- */
-function renderProducts() {
+const cardHTML = (p, i) => {
+  const free = dispKg(p);
+  const out  = free <= 0;
+  const low  = !out && free <= LOW_KG;
+  const deal = isSale(p);
+  const q2   = qty.get(p.id) ?? STEP;
+  const badge = out ? '<span class="badge out">Terminato</span>'
+                : low ? '<span class="badge">Ultimi kg</span>'
+                : deal ? `<span class="badge sale">🔥 -${sconto(p)}%</span>` : '';
+  return `
+  <article class="product ${out ? 'soldout' : ''}" data-id="${p.id}" style="--i:${i}">
+    ${badge}
+    <div class="sym">${esc(p.emoji || '🌿')}</div>
+    <h3>${esc(p.name)}</h3>
+    <p class="price">${deal ? `<s>${eur(p.price)}</s> ` : ''}${eur(effPrice(p))}<small> /kg</small></p>
+    <p class="stock">Disponibili: <strong>${kg(free)}</strong></p>
+    <div class="stepper">
+      <button data-act="dec" data-id="${p.id}" aria-label="Riduci kg">−</button>
+      <span class="kg">${kg(q2)}</span>
+      <button data-act="inc" data-id="${p.id}" aria-label="Aumenta kg">+</button>
+    </div>
+    <button class="product-add" data-act="add" data-id="${p.id}">Prenota</button>
+  </article>`;
+};
+
+function renderProducts(animate = false) {
   const box = $('#products');
+  if (!box) return;
   const q = query.trim().toLowerCase();
   const list = q ? products.filter(p => (p.name + ' ' + (p.desc || '')).toLowerCase().includes(q)) : products;
+  box.classList.toggle('animate', !!animate && !!list.length);
   if (!list.length) {
     box.innerHTML = `<div class="empty">Nessun risultato per “${esc(query)}”: prova con un altro nome 🌱</div>`;
     return;
   }
-  box.innerHTML = list.map((p, i) => {
-    const free = dispKg(p);
-    const out  = free <= 0;
-    const low  = !out && free <= LOW_KG;
-    const deal = isSale(p);
-    const q2   = qty.get(p.id) ?? STEP;
-    const badge = out ? '<span class="badge out">Terminato</span>'
-                : low ? '<span class="badge">Ultimi kg</span>'
-                : deal ? `<span class="badge sale">🔥 -${sconto(p)}%</span>` : '';
-    return `
-    <article class="product ${out ? 'soldout' : ''}" style="--i:${i}">
-      ${badge}
-      <div class="sym">${esc(p.emoji || '🌿')}</div>
-      <h3>${esc(p.name)}</h3>
-      <p class="price">${deal ? `<s>${eur(p.price)}</s> ` : ''}${eur(effPrice(p))}<small> /kg</small></p>
-      <p class="stock">Disponibili: <strong>${kg(free)}</strong></p>
-      <div class="stepper">
-        <button data-act="dec" data-id="${p.id}" aria-label="Riduci kg">−</button>
-        <span class="kg">${kg(q2)}</span>
-        <button data-act="inc" data-id="${p.id}" aria-label="Aumenta kg">+</button>
-      </div>
-      <button class="product-add" data-act="add" data-id="${p.id}">Prenota</button>
-    </article>`;
-  }).join('');
+  box.innerHTML = list.map(cardHTML).join('');
+}
+
+/* ---------- Patch chirurgica: aggiorna SOLO la card toccata, senza re-render ---------- */
+function refreshCardVisuals(p) {
+  const card = document.querySelector(`.product[data-id="${p.id}"]`);
+  if (!card) return;   // card filtrata dalla ricerca: la aggiornerà il prossimo render
+  const free = dispKg(p);
+  const out  = free <= 0;
+  const low  = !out && free <= LOW_KG;
+  const deal = isSale(p);
+  card.classList.toggle('soldout', out);
+  const stockEl = card.querySelector('.stock');
+  if (stockEl) stockEl.innerHTML = `Disponibili: <strong>${kg(free)}</strong>`;
+  const kgEl = card.querySelector('.stepper .kg');
+  if (kgEl) kgEl.textContent = kg(qty.get(p.id) ?? STEP);
+  const want = out ? '<span class="badge out">Terminato</span>'
+              : low ? '<span class="badge">Ultimi kg</span>'
+              : deal ? `<span class="badge sale">🔥 -${sconto(p)}%</span>` : '';
+  const badge = card.querySelector('.badge');
+  if (want) badge ? badge.outerHTML = want : card.insertAdjacentHTML('afterbegin', want);
+  else if (badge) badge.remove();
+}
+
+function syncOffersFor(p) {
+  if (!offersBox) return;
+  const off = offersBox.querySelector(`.offer-card[data-id="${p.id}"]`);
+  const eligible = isSale(p) && dispKg(p) > 0;
+  if (off && eligible) {
+    const stockEl = off.querySelector('.stock');
+    if (stockEl) stockEl.innerHTML = `Disponibili: <strong>${kg(dispKg(p))}</strong>`;
+  } else {
+    // entra o esce dalla striscia offerte: rebuild senza animazione = niente flash
+    renderOffers(false);
+  }
+}
+
+/* ---------- Feedback "aggiunto al carrello": volo ad arco + conferma sul bottone ---------- */
+function flyToCart(fromEl, p) {
+  const cartBtn = $('#cart-btn');
+  if (!cartBtn) return;
+  if (prefersReduced() || !fromEl || !fromEl.animate) return bumpCart();
+
+  const a = fromEl.getBoundingClientRect();
+  const b = cartBtn.getBoundingClientRect();
+  const sx = a.left + a.width / 2,  sy = a.top + a.height / 2;
+  const tx = b.left + b.width / 2,  ty = b.top + b.height / 2;
+
+  const dot = document.createElement('div');
+  dot.className = 'fly-dot';
+  dot.textContent = p.emoji || '🌿';
+  dot.style.left = (sx - 21) + 'px';
+  dot.style.top  = (sy - 21) + 'px';
+  document.body.appendChild(dot);
+
+  const dx = tx - sx, dy = ty - sy;
+  dot.animate([
+    { transform: 'translate(0,0) scale(1)', opacity: 1 },
+    { transform: `translate(${dx * .5}px, ${dy * .55 - 46}px) scale(1.15)`, opacity: 1, offset: .55 },
+    { transform: `translate(${dx}px, ${dy}px) scale(.25)`, opacity: .15 }
+  ], { duration: 620, easing: 'cubic-bezier(.3,.7,.4,1)' }).onfinish = () => { dot.remove(); bumpCart(); };
+  setTimeout(() => dot.remove(), 900);   // sicurezza: mai pallini orfani
+}
+
+function bumpCart() {
+  const btn = $('#cart-btn'), n = $('#cart-count');
+  if (!btn) return;
+  btn.classList.remove('bump'); void btn.offsetWidth; btn.classList.add('bump');
+  if (n) { n.classList.remove('pop'); void n.offsetWidth; n.classList.add('pop'); }
+}
+
+function buttonDone(b) {
+  if (!b) return;
+  const label = b.textContent;
+  b.textContent = '✓ Aggiunto';
+  b.classList.add('done');
+  b.disabled = true;
+  setTimeout(() => {
+    b.textContent = label;
+    b.classList.remove('done');
+    b.disabled = false;
+  }, 850);
 }
 
 /* ---------- Carrello ---------- */
@@ -173,8 +262,10 @@ const cartTotal = () => cart.reduce((s, i) => {
 }, 0);
 
 function renderCart() {
-  $('#cart-count').textContent = cart.length;
+  const count = $('#cart-count');
+  if (count) count.textContent = cart.length;
   const list = $('#cart-list');
+  if (!list) return;
   if (!cart.length) {
     list.innerHTML = '<li><small>Nessun prodotto prenotato: scegli dal raccolto qui sopra 🌱</small></li>';
     $('#cart-total').textContent = '';
@@ -211,15 +302,22 @@ function gridAction(e) {
     const line = inCart(p.id);
     line ? line.kg = r1(line.kg + q) : cart.push({ id: p.id, kg: q });
     qty.set(p.id, STEP);
-    saveCart(); render();
+    saveCart();
+    refreshCardVisuals(p);   // solo la card toccata: la griglia non si ricostruisce
+    syncOffersFor(p);
+    renderCart();
+    buttonDone(b);           // conferma visiva sul posto…
+    flyToCart(b, p);         // …e l'emoji vola nel carrello
     toast(`${p.name}: ${kg(q)} aggiunti alla prenotazione`);
   } else {
     const next = b.dataset.act === 'inc' ? Math.min(maxStep, r1(q + STEP)) : Math.max(STEP, r1(q - STEP));
     qty.set(p.id, next);
-    render();
+    const kgEl = document.querySelector(`.product[data-id="${p.id}"] .stepper .kg`);
+    if (kgEl) kgEl.textContent = kg(next);
   }
 }
-$('#products').addEventListener('click', gridAction);
+const gridBox = $('#products');
+if (gridBox) gridBox.addEventListener('click', gridAction);
 if (offersBox) offersBox.addEventListener('click', gridAction);
 
 /* ---------- Ricerca live ---------- */
@@ -235,15 +333,20 @@ if (searchEl) {
   }
 }
 
-/* ---------- Interazioni carrello ---------- */
-$('#cart').addEventListener('click', e => {
+/* ---------- Interazioni carrello (patch chirurgica anche qui) ---------- */
+const cartBox = $('#cart');
+if (cartBox) cartBox.addEventListener('click', e => {
   const b = e.target.closest('button[data-cart]');
   if (!b) return;
   const line = inCart(+b.dataset.id);
   if (!line) return;
-  if (b.dataset.cart === 'del') cart = cart.filter(i => i.id !== line.id);
-  else { line.kg = r1(line.kg - STEP); if (line.kg <= 0) cart = cart.filter(i => i.id !== line.id); }
-  saveCart(); render();
+  const pid = line.id;
+  if (b.dataset.cart === 'del') cart = cart.filter(i => i.id !== pid);
+  else { line.kg = r1(line.kg - STEP); if (line.kg <= 0) cart = cart.filter(i => i.id !== pid); }
+  saveCart();
+  renderCart();
+  const p = products.find(x => x.id === pid);
+  if (p) { refreshCardVisuals(p); syncOffersFor(p); }
 });
 
 /* ---------- Checkout in 3 step: riepilogo → dati cliente → conferma ---------- */
@@ -379,4 +482,4 @@ window.addEventListener('storage', e => {
 });
 
 applySite();
-render();
+render(true);   // unico render animato: ingresso a scacchiera solo al primo caricamento

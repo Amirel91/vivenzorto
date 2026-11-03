@@ -11,7 +11,7 @@ const OKEY = 'vz_orders';
 const CKEY = 'vz_cart';
 const MKEY = 'vz_me';      // dati cliente per precompilare le prossime prenotazioni
 const SITEKEY = 'vz_site'; // testi hero + footer impostati dal gestionale
-const LOGO = '🍅';         // emoji del marchio (header, footer, favicon)
+const LOGO = '🧺';         // emoji del marchio: il cesto del raccolto (header, footer, favicon)
 const LOW_KG = 3;          // soglia "ultimi kg"
 const STEP  = 0.5;         // step di prenotazione in kg
 
@@ -114,7 +114,7 @@ function applySite() {
 
 /* ---------- Rendering ---------- */
 // `animate` è vero solo al primo caricamento: le animazioni d'ingresso delle card
-// sono scoperate alla classe .animate del contenitore, così i refresh successivi
+// sono scotate alla classe .animate del contenitore, così i refresh successivi
 // (ricerca, aggiunte al carrello, sync tra schede) non fanno "flashare" la griglia.
 function render(animate = false) { renderOffers(animate); renderProducts(animate); renderCart(); }
 
@@ -209,6 +209,15 @@ function syncOffersFor(p) {
 }
 
 /* ---------- Feedback "aggiunto al carrello": volo ad arco + conferma sul bottone ---------- */
+// Anello verde che si espande dalla card appena aggiunta (classe .just-added nel CSS)
+function pulseAdded(el) {
+  if (!el) return;
+  el.classList.remove('just-added');
+  void el.offsetWidth;   // restart dell'animazione anche su click ravvicinati
+  el.classList.add('just-added');
+  setTimeout(() => el.classList.remove('just-added'), 700);   // sicurezza se animationend non parte
+}
+
 function flyToCart(fromEl, p) {
   const cartBtn = $('#cart-btn');
   if (!cartBtn) return;
@@ -306,6 +315,8 @@ function gridAction(e) {
     refreshCardVisuals(p);   // solo la card toccata: la griglia non si ricostruisce
     syncOffersFor(p);
     renderCart();
+    pulseAdded(document.querySelector(`.product[data-id="${p.id}"]`));                 // anello verde sulla card
+    pulseAdded(offersBox && offersBox.querySelector(`.offer-card[data-id="${p.id}"]`)); // e sull'eventuale card offerta
     buttonDone(b);           // conferma visiva sul posto…
     flyToCart(b, p);         // …e l'emoji vola nel carrello
     toast(`${p.name}: ${kg(q)} aggiunti alla prenotazione`);
